@@ -1,0 +1,10 @@
+server:
+  port: 514
+  ipaddress: "localhost"
+
+database:
+  port: 5432
+  host: "127.0.0.1"
+  user: "postgres"
+  password: "secret-password-for-database"
+  dbname: "logparser"
