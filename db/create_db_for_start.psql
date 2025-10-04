@@ -22,7 +22,7 @@ type ServerConfig struct {
 }
 
 type Maxseverity struct {
-    Level int `yaml:"level"`
+	Level int `yaml:"level"`
 }
 
 type Config struct {

@@ -44,7 +44,7 @@ func ParseLog(logParts map[string]interface{}) (message Message) {
 	return message
 }
 
-func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]interface{}) {
+func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]interface{}, severity int) {
     db, err := sql.Open("postgres", psqlConnect)
     if err != nil {
         panic(err)
@@ -57,24 +57,27 @@ func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]in
     if err != nil {
 //        panic(err)
 		fmt.Println("В случае ошибки подключения к БД производим запись в файл.\n")
-		SaveToFile(fileIfNotWorkDB, msg)
+		SaveToFile(fileIfNotWorkDB, msg, severity)
     } else {
     	fmt.Println("Successfully connected!")
     	sqlStatement := `
 		INSERT INTO logparser_logs (timestamp, remotetimestamp, client, content, facility, hostname, priority, severity, tag)
 		VALUES (NOW(), $1, $2, $3, $4, $5, $6, $7, $8)`
-		_, err = db.Exec(sqlStatement, msg.timestamp, msg.client, 
-								msg.content, msg.facility, msg.hostname, 
-								msg.priority, msg.severity, msg.tag)
-		if err != nil {
-			fmt.Println("Ошибка записи в БД!\n")
-		} else {
-			fmt.Println("Запись в БД прошла успешно!\n")	
+		if (severity >= msg.severity) {
+			_, err = db.Exec(sqlStatement, msg.timestamp, msg.client, 
+									msg.content, msg.facility, msg.hostname, 
+									msg.priority, msg.severity, msg.tag)
+			if err != nil {
+				fmt.Println("Ошибка записи в БД!\n")
+				SaveToFile(fileIfNotWorkDB, msg, severity)
+			} else {
+				fmt.Println("Запись в БД прошла успешно!\n")	
+			}
 		}
 	}
 }
 
-func SaveToFile(fileIfNotWorkDB string, msg Message){
+func SaveToFile(fileIfNotWorkDB string, msg Message, severity int){
 	
 	file, err := os.OpenFile(fileIfNotWorkDB, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -90,9 +93,11 @@ func SaveToFile(fileIfNotWorkDB string, msg Message){
 								msg.priority, msg.severity, msg.tag)
 
 	// Запись в файл
-	_, err = file.WriteString(textToSave)
-	if err != nil {
-//		fmt.Printf("Error writing to file: %v\n", err)
-		return
+	if (severity >= msg.severity) {
+		_, err = file.WriteString(textToSave)
+		if err != nil {
+	//		fmt.Printf("Error writing to file: %v\n", err)
+			return
+		}
 	}
 }

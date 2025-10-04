@@ -8,3 +8,6 @@ database:
   user: "postgres"
   password: "secret-password-for-database"
   dbname: "logparser"
+
+maxseverity:
+  level: 1

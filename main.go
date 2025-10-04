@@ -50,7 +50,7 @@ func main() {
     go func(channel syslog.LogPartsChannel) {
         for logParts := range channel {
             // Сохраняем результаты syslog в БД или файл, если БД не доступна
-            localDB.SaveToDB(psqlConnect, fileIfNotWorkDB ,logParts)
+            localDB.SaveToDB(psqlConnect, fileIfNotWorkDB ,logParts, config.Severity.Level)
             // In a real application, you would process or store these logs
             }
     }(logChannel)
