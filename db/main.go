@@ -83,16 +83,19 @@ func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]in
 
 
 		if (severity >= msg.severity.(int)) {
+
+			addClient := `INSERT INTO clients (client) VALUES ($1) ON CONFLICT (client) DO NOTHING`
+			_, err = db.Exec(addClient, client)
+			if err != nil {
+				fmt.Printf("Ошибка записи в БД! %v\n", err)
+				}
+				
 			_, err = db.Exec(sqlStatement, msg.timestamp, client, 
 									msg.content, msg.facility, msg.hostname, 
 									msg.priority, msg.severity, msg.tag)
 			if err != nil {
 				fmt.Println("Ошибка записи в БД!\n")
 				SaveToFile(fileIfNotWorkDB, msg, severity, client)
-			addClient := `INSERT INTO clients (client) VALUES ($1) ON CONFLICT (client) DO NOTHING`
-			_, err = db.Exec(addClient, client)
-			if err != nil {
-				fmt.Printf("Ошибка записи в БД! %sv\n", err)
 			} else {
 				fmt.Println("Запись в БД прошла успешно!\n")	
 			}
