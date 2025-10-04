@@ -63,7 +63,7 @@ func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]in
     	sqlStatement := `
 		INSERT INTO logparser_logs (timestamp, remotetimestamp, client, content, facility, hostname, priority, severity, tag)
 		VALUES (NOW(), $1, $2, $3, $4, $5, $6, $7, $8)`
-		if (severity >= msg.severity) {
+		if (severity >= msg.severity.(int)) {
 			_, err = db.Exec(sqlStatement, msg.timestamp, msg.client, 
 									msg.content, msg.facility, msg.hostname, 
 									msg.priority, msg.severity, msg.tag)
@@ -93,7 +93,7 @@ func SaveToFile(fileIfNotWorkDB string, msg Message, severity int){
 								msg.priority, msg.severity, msg.tag)
 
 	// Запись в файл
-	if (severity >= msg.severity) {
+	if (severity >= msg.severity.(int)) {
 		_, err = file.WriteString(textToSave)
 		if err != nil {
 	//		fmt.Printf("Error writing to file: %v\n", err)
