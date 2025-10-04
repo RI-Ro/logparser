@@ -17,6 +17,7 @@ import (
     "fmt"
     "os"
     "log"
+    "strings"
 
     _ "github.com/lib/pq"
 )
@@ -53,23 +54,43 @@ func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]in
   
     msg := ParseLog(logParts)
 
+    client := fmt.Strintf("%v", msg.client)
+	
+	indexDelete := strings.Index(client, ":")
+
+	// Если двоеточие найдено (indexDelete != -1)
+	if indexDelete != -1 {
+		// Удаляем все после двоеточия (включая двоеточие)
+		// Оставляем только IP-адрес
+		// Приходит 127.0.0.1.34583 оставляем только 127.0.0.1
+		client = client[:indexDelete]
+	} else {
+		// Двоеточия не было
+		client = client
+	}
+
     err = db.Ping()
     if err != nil {
 //        panic(err)
 		fmt.Println("В случае ошибки подключения к БД производим запись в файл.\n")
-		SaveToFile(fileIfNotWorkDB, msg, severity)
+		SaveToFile(fileIfNotWorkDB, msg, severity, client)
     } else {
     	fmt.Println("Successfully connected!")
     	sqlStatement := `
 		INSERT INTO logparser_logs (timestamp, remotetimestamp, client, content, facility, hostname, priority, severity, tag)
 		VALUES (NOW(), $1, $2, $3, $4, $5, $6, $7, $8)`
+
+
+
 		if (severity >= msg.severity.(int)) {
-			_, err = db.Exec(sqlStatement, msg.timestamp, msg.client, 
+			_, err = db.Exec(sqlStatement, msg.timestamp, client, 
 									msg.content, msg.facility, msg.hostname, 
 									msg.priority, msg.severity, msg.tag)
 			if err != nil {
 				fmt.Println("Ошибка записи в БД!\n")
-				SaveToFile(fileIfNotWorkDB, msg, severity)
+				SaveToFile(fileIfNotWorkDB, msg, severity, client)
+			addClient := `INSERT INTO clients (client) VALUES ($1) ON CONFLICT (client) DO NOTHING`
+			_, _ = db.Exec(addClient, client)
 			} else {
 				fmt.Println("Запись в БД прошла успешно!\n")	
 			}
@@ -77,7 +98,7 @@ func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]in
 	}
 }
 
-func SaveToFile(fileIfNotWorkDB string, msg Message, severity int){
+func SaveToFile(fileIfNotWorkDB string, msg Message, severity int, client string){
 	
 	file, err := os.OpenFile(fileIfNotWorkDB, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -88,7 +109,7 @@ func SaveToFile(fileIfNotWorkDB string, msg Message, severity int){
 	var textToSave string;
 
 	textToSave = fmt.Sprintf("%v client:%v content:%v faciliti:%v hostname:%v priority:%v severity:%v tag:%v\n", 
-								msg.timestamp, msg.client, 
+								msg.timestamp, client, 
 								msg.content, msg.facility, msg.hostname, 
 								msg.priority, msg.severity, msg.tag)
 

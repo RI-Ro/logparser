@@ -1,55 +1,56 @@
-package config
 
-import (
-    "fmt"
-    "gopkg.in/yaml.v3"
-    "io/ioutil"
-    "log"
-    )
 
-type DBConfig struct {
-    Port int `yaml:"port"`
-    Host string `yaml:"host"`
-    User string `yaml:"user"`
-    DBname string `yaml:"dbname"`
-    Password string `yaml:"password"`
-}
+CREATE TABLE logparser_logs
+(id SERIAL PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT NOW(), remotetimestamp TIMESTAMPTZ, client TEXT,
+content TEXT, facility INT, hostname TEXT, priority INT, severity INT, tag TEXT);
 
-type ServerConfig struct {
-    Port int `yaml:"port"`
-    Ipaddress string `yaml:"ipaddress"`
-    Maxseverity int `yaml:"maxseverity"`
-}
+CREATE INDEX ON logparser_logs (client);
+CREATE INDEX ON logparser_logs (facility);
+CREATE INDEX ON logparser_logs (hostname);
+CREATE INDEX ON logparser_logs (priority);
+CREATE INDEX ON logparser_logs (severity);
+CREATE INDEX ON logparser_logs (remotetimestamp);
+CREATE INDEX ON logparser_logs (timestamp);
 
-type Maxseverity struct {
-	Level int `yaml:"level"`
-}
 
-type Config struct {
-    DB DBConfig `yaml:"database"`
-    Server ServerConfig `yaml:"server"`
-    Severity Maxseverity `yaml:"maxseverity"`
-}
+CREATE TABLE facility (id SERIAL PRIMARY KEY, title VARCHAR(100));
 
-func CreateConfig(configPath string) Config {
+INSERT INTO facility (id, title) VALUES 
+(0, 'kernel messages'),
+(1, 'user-level messages'),
+(2, 'mail system'),
+(3, 'system daemons'),
+(4, 'security/authorization messages'),
+(5, 'messages generated internally by Syslog'),
+(6, 'line printer subsystem'),
+(7, 'network news subsystem'),
+(8, 'UUCP subsystem'),
+(9, 'clock daemon'),
+(10, 'security/authorization messages'),
+(11, 'FTP daemon'),
+(12, 'NTP subsystem'),
+(13, 'log audit'),
+(14, 'log  alert'),
+(15, 'clock daemon'),
+(16, 'local use 0 (local0)'),
+(17, 'local use 1 (local1)'),
+(18, 'local use 2 (local2)'),
+(19, 'local use 2 (local3)'),
+(20, 'local use 2 (local4)'),
+(21, 'local use 2 (local5)'),
+(22, 'local use 2 (local6)'),
+(23, 'local use 2 (local7)');
 
-    //data, err := ioutil.ReadFile("config.yaml")
-    data, err := ioutil.ReadFile(configPath)
-    if err != nil {
-        log.Fatalf("error: %v", err)
-    }
+CREATE TABLE severity (id SERIAL PRIMARY KEY, title VARCHAR(30), description TEXT);
 
-    var config Config
-    err = yaml.Unmarshal(data, &config)
-    if err != nil {
-        log.Fatalf("error: %v", err)
-    }
-    return config
-}
+INSERT INTO severity (id, title, description) VALUES 
+(0,'Emergency','Состояние "паники", затрагивающее несколько приложений, серверов или сайтов. Система не работает. Немедленно сообщите об этом всему техническому персоналу.'),
+(1,'Alert','Состояние, требующее немедленного устранения, например, потеря резервного подключения к какому-то узлу доступа. Сообщите сотрудникам, которые могут устранить проблему.'),
+(2,'Critical','Состояние, требующее немедленного исправления или указывающее на сбой в основной системе, например, потерю подключения к основному интернет-провайдеру. Устраните КРИТИЧЕСКИЕ неполадки до появления проблем на уровне ПРЕДУПРЕЖДЕНИЯ.'),
+(3,'Error','Несрочные сбои. Уведомляйте разработчиков или администраторов, поскольку ошибки должны быть устранены в течение заданного времени.'),
+(4,'Warning','Предупреждающие сообщения не являются ошибками, но они указывают на то, что ошибка возникнет, если не будет предпринято требуемое действие. Примером может служить файловая система, которая заполнена на 85%. Каждый элемент должен быть устранен в течение заданного времени.'),
+(5,'Notice','События, которые являются необычными, но не являются условиями возникновения ошибок. Эти сведения могут быть кратко изложены в электронном письме разработчикам или администраторам для выявления потенциальных проблем. Немедленных действий не требуется.'),
+(6,'Informational','Обычные рабочие сообщения. Они могут использоваться для функций обслуживания сети, таких как создание отчетов и измерение пропускной способности. Никаких действий не требуется.'),
+(7,'Debug','Информация, полезная разработчикам для отладки приложения. Эта информация бесполезна во время выполнения операций.');
 
-func CreateConnectString(config Config) string {
-    psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-        "password=%s dbname=%s sslmode=disable",
-        config.DB.Host, config.DB.Port, config.DB.User, config.DB.Password, config.DB.DBname)
-    return psqlInfo
-}
+CREATE TABLE clients (client VARCHAR(20) PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT NOW());
