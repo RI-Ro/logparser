@@ -54,3 +54,5 @@ INSERT INTO severity (id, title, description) VALUES
 (7,'Debug','Информация, полезная разработчикам для отладки приложения. Эта информация бесполезна во время выполнения операций.');
 
 CREATE TABLE clients (client VARCHAR(20) PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT NOW());
+
+CREATE TABLE hostnames (host VARCHAR(50) PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT NOW());

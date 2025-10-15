@@ -89,7 +89,13 @@ func SaveToDB(psqlConnect string, fileIfNotWorkDB string, logParts map[string]in
 			if err != nil {
 				fmt.Printf("Ошибка записи в БД! %v\n", err)
 				}
-				
+
+			addHostname := `INSERT INTO hostnames (host) VALUES ($1) ON CONFLICT (host) DO NOTHING`
+			_, err = db.Exec(addHostname, message.hostname)
+			if err != nil {
+				fmt.Printf("Ошибка записи в БД! %v\n", err)
+				}
+
 			_, err = db.Exec(sqlStatement, msg.timestamp, client, 
 									msg.content, msg.facility, msg.hostname, 
 									msg.priority, msg.severity, msg.tag)
