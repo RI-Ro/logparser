@@ -1,19 +1,14 @@
+\c postgres 
 
+DROP database logparser;
 
-CREATE TABLE logparser_logs
-(id SERIAL PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT NOW(), remotetimestamp TIMESTAMPTZ, client TEXT,
-content TEXT, facility INT, hostname TEXT, priority INT, severity INT, tag TEXT);
+CREATE database logparser;
 
-CREATE INDEX ON logparser_logs (client);
-CREATE INDEX ON logparser_logs (facility);
-CREATE INDEX ON logparser_logs (hostname);
-CREATE INDEX ON logparser_logs (priority);
-CREATE INDEX ON logparser_logs (severity);
-CREATE INDEX ON logparser_logs (remotetimestamp);
-CREATE INDEX ON logparser_logs (timestamp);
+\c logparser
 
-
-CREATE TABLE facility (id SERIAL PRIMARY KEY, title VARCHAR(100));
+CREATE TABLE facility (id SERIAL PRIMARY KEY, 
+                title VARCHAR(100)
+                );
 
 INSERT INTO facility (id, title) VALUES 
 (0, 'kernel messages'),
@@ -41,7 +36,10 @@ INSERT INTO facility (id, title) VALUES
 (22, 'local use 2 (local6)'),
 (23, 'local use 2 (local7)');
 
-CREATE TABLE severity (id SERIAL PRIMARY KEY, title VARCHAR(30), description TEXT);
+CREATE TABLE severity (id SERIAL PRIMARY KEY, 
+                title VARCHAR(30), 
+                description TEXT
+                );
 
 INSERT INTO severity (id, title, description) VALUES 
 (0,'Emergency','Состояние "паники", затрагивающее несколько приложений, серверов или сайтов. Система не работает. Немедленно сообщите об этом всему техническому персоналу.'),
@@ -53,6 +51,29 @@ INSERT INTO severity (id, title, description) VALUES
 (6,'Informational','Обычные рабочие сообщения. Они могут использоваться для функций обслуживания сети, таких как создание отчетов и измерение пропускной способности. Никаких действий не требуется.'),
 (7,'Debug','Информация, полезная разработчикам для отладки приложения. Эта информация бесполезна во время выполнения операций.');
 
-CREATE TABLE clients (client VARCHAR(20) PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE hostname (id SERIAL PRIMARY KEY, 
+            ip VARCHAR(20), 
+            hostname VARCHAR(50), 
+            timestamp TIMESTAMPTZ DEFAULT NOW(), 
+            UNIQUE(ip, hostname)
+            );
 
-CREATE TABLE hostnames (host VARCHAR(50) PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE logparser_logs
+(id SERIAL PRIMARY KEY, 
+timestamp TIMESTAMPTZ DEFAULT NOW(), 
+remotetimestamp TIMESTAMPTZ, 
+hostname_id INT NOT NULL,
+facility_id INT NOT NULL, 
+severity_id INT NOT NULL,
+content TEXT, 
+tag TEXT,
+FOREIGN KEY (hostname_id) REFERENCES hostname (id) ON DELETE CASCADE,
+FOREIGN KEY (facility_id) REFERENCES facility (id) ON DELETE CASCADE,
+FOREIGN KEY (severity_id) REFERENCES severity (id) ON DELETE CASCADE
+);
+
+CREATE INDEX logparser_logs_hostname_id_idx ON logparser_logs (hostname_id);
+CREATE INDEX logparser_logs_facility_id_idx ON logparser_logs (facility_id);
+CREATE INDEX logparser_logs_severity_id_idx ON logparser_logs (severity_id);
+CREATE INDEX logparser_logs_timestamp_idx ON logparser_logs (timestamp);
+CREATE INDEX logparser_logs_content_idx ON logparser_logs USING btree (content);

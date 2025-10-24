@@ -5,9 +5,9 @@ server:
 database:
   port: 5432
   host: "127.0.0.1"
-  user: "postgres"
+  user: "logparser"
   password: "secret-password-for-database"
   dbname: "logparser"
 
 maxseverity:
-  level: 1
+  level: 7
